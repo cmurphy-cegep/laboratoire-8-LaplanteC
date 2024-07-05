@@ -52,7 +52,33 @@ class BasicStrategyModified extends BasicStrategy {
 // en base64. La fonction de hachage cryptographique employée est sha512, avec 100000 itérations.
 // Référez-vous au app.js de l'exemple 1 du cours 19 pour voir la marche à suivre.
 
-// passport.use( ... à compléter ... );
+passport.use(new BasicStrategyModified((username, password, authResult) => {
+  userAccountQueries.getLoginByUserAccountId(username).then(utilisateur => {
+    if (!utilisateur || !utilisateur.isActive) {
+      return authResult(null, false);
+    }
+
+    const iterations = 100000;
+    const keylen = 64;
+    const digest = "sha512";
+
+    crypto.pbkdf2(password, utilisateur.passwordSalt, iterations, keylen, digest, (err, hashedPassword) => {
+      if (err) {
+        return authResult(err);
+      }
+
+      const utilisateurMdpHashBuffer = Buffer.from(utilisateur.passwordHash, "base64");
+
+      if (!crypto.timingSafeEqual(utilisateurMdpHashBuffer, hashedPassword)) {
+        return authResult(null, false);
+      }
+
+      return authResult(null, utilisateur);
+    });
+  }).catch(err => {
+    return authResult(err);
+  });
+}));
 
 
 app.use('/products', productRouter);
@@ -84,7 +110,23 @@ app.use('/orders', orderRouter);
 // comme Insomnia en activant l'authentification Basic et en entrant les informations
 // d'un compte utilisateur (p.ex. josbleau).
 
-// app.get('/login', ... à compléter ...);
+app.get('/login', 
+  passport.authenticate('basic', { session: false }),
+  (req, res, next) => {
+    if (req.user) {
+      const userDetails = {
+        userAccountId: req.user.userAccountId,
+        userFullName: req.user.userFullName,
+        isAdmin: req.user.isAdmin,
+        isActive: req.user.isActive
+      };
+
+      res.json(userDetails);
+    } else {
+      return next({ status: 500, message: "Propriété user absente" })
+    }
+  }
+);
 
 
 // *** GESTION DES ERREURS ***
