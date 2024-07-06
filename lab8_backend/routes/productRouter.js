@@ -6,6 +6,8 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+const passport = require('passport');
+
 const HttpError = require("../HttpError");
 
 const productQueries = require("../queries/ProductQueries");
@@ -76,7 +78,14 @@ router.get('/:id/image', (req, res, next) => {
 //
 // Au besoin, référez-vous au module listeDifussionRouter.js dans l'exemple de code du cours 19.
 router.post('/',
+    passport.authenticate('basic', { session: false }),
     (req, res, next) => {
+        const user = req.user;
+
+        if(!user || !user.isAdmin) {
+            return next({ status: 403, message: "Droit administrateur requis"});
+        }
+
         const id = req.body.id;
         if (!id || id === '') {
             // Le return fait en sorte qu'on n'exécutera pas le reste de la fonction
@@ -112,7 +121,14 @@ router.post('/',
 // Approche similaire que pour le POST ci-haut. La modification d'un produit
 // doit être refusée pour les comptes non-administrateurs (avec un statut HTTP 403).
 router.put('/:id',
+    passport.authenticate('basic', { session: false }),
     (req, res, next) => {
+        const user = req.user;
+
+        if (!user || !user.isAdmin) {
+            return next({ status: 403, message: "Droit administrateur requis"});
+        }
+
         const id = req.params.id;
         if (!id || id === '') {
             return next(new HttpError(400, 'Le paramètre id est requis'));
@@ -149,7 +165,14 @@ router.put('/:id',
 // Approche similaire que pour le POST ci-haut. Le retrait d'un produit
 // doit être refusée pour les comptes non-administrateurs (avec un statut HTTP 403).
 router.delete('/:id',
+    passport.authenticate('basic', { session: false }),
     (req, res, next) => {
+        const user = req.user;
+
+        if (!user || !user.isAdmin) {
+            return next({ status: 403, message: "Droit administrateur requis"});
+        }
+
         const id = req.params.id;
         if (!id || id === '') {
             return next(new HttpError(400, 'Le paramètre id est requis'));
