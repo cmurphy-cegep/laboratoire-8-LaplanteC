@@ -79,6 +79,7 @@ export default {
     inject: ['cart'],
     data() {
         return {
+            session: session,
             nomPaiement: '',
             nomPaiementValide: true,
             carteCredit: '',
@@ -167,7 +168,7 @@ export default {
             // utilisatrice présentement connecté(e).
 
             const commande = {
-                userId: 'josbleau', // ** Exercice 2.2 : à remplacer par l'utilisateur/utilisatrice connecté(e) **
+                userId: session.user.userAccountId, // ** Exercice 2.2 : à remplacer par l'utilisateur/utilisatrice connecté(e) **
                 paiement: {
                     nomCarteCredit: this.nomPaiement,
                     noCarteCredit: this.carteCredit,
@@ -186,7 +187,8 @@ export default {
             fetch("/api/orders", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    ...session.getAuthHeaders()
                 },
                 body: JSON.stringify(commande)
             }).then((response) => {
